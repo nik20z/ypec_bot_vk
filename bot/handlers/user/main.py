@@ -1,5 +1,6 @@
 from datetime import datetime
 from loguru import logger
+import requests
 
 from vk_maria.dispatcher import Dispatcher
 from vk_maria.types import Message
@@ -20,6 +21,7 @@ from bot.functions import create_name_list_text
 from bot.functions import get_condition_smile
 
 from bot.message_timetable import MessageTimetable
+from bot.misc import Keys
 
 from bot.keyboards import Reply
 
@@ -31,12 +33,17 @@ def new_user(event: Message):
     """Обработчик для нового пользователя"""
     user_id = event.message.from_id
     joined = datetime.utcfromtimestamp(event.message.date)
-    user_name = ""
+    response = requests.get(f"https://api.vk.com/method/users.get?user_ids={user_id}&access_token={Keys.VK_TOKEN}&v=5.131").json()
+    user_data = response['response'][0]
+
+    first_name = user_data['first_name']
+    last_name = user_data['last_name']
+    user_name = f"{first_name} {last_name}"
 
     if user_id > 0:
-        text = AnswerText.new_user["welcome_message_private"](user_name)
+        text = AnswerText.new_user["welcome_message_private"](first_name)
     else:
-        text = AnswerText.new_user["welcome_message_group"](user_name)
+        text = AnswerText.new_user["welcome_message_group"](first_name)
 
     new_user_data = (user_id, user_name, joined)
     Insert.new_user(new_user_data)
